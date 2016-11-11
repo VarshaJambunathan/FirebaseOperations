@@ -1,19 +1,29 @@
 package com.example.varsha.databasequeries;
 
+import android.content.Intent;
+import android.content.IntentSender;
+import android.net.Uri;
+import android.net.wifi.WifiConfiguration;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.client.*;
+import com.firebase.client.core.Context;
+import com.google.android.gms.common.ConnectionResult;
 
 public class MainActivity extends AppCompatActivity {
 
     TextView person;
     EditText mTitle , mDescription;
     Button mSave;
+    Firebase addDB;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +59,5 @@ public class MainActivity extends AppCompatActivity {
                 fire.child("Person").setValue(person);
             }
         });
-
     }
 }
