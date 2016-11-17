@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
     TextView person;
     EditText mTitle , mDescription;
     Button mSave;
-    Firebase addDB;
+    public static final String FIREBASE_URL = "https://databasequeries-30365.firebaseio.com/";
 
 
     @Override
@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Creating a Firebase object
-                Firebase fire = new Firebase("https://databasequeries-30365.firebaseio.com/");
+                Firebase list = new Firebase(FIREBASE_URL);
 
                 //Getting values to store
                 String title = mTitle.getText().toString();
@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
                 person.setDescription(description);
 
                 //Pushing to Firebase
-                Firebase newRef = fire.child("Person").push();
-                newRef.setValue(person);
+                Firebase appendList = list.child("Person").push();
+                appendList.setValue(person);
 
             }
         });
