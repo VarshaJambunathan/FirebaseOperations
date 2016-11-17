@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //Creating a Firebase object
-                Firebase fire = new Firebase(Config.FIREBASE_URL);
+                Firebase fire = new Firebase("https://databasequeries-30365.firebaseio.com/");
 
                 //Getting values to store
                 String title = mTitle.getText().toString();
@@ -55,9 +55,12 @@ public class MainActivity extends AppCompatActivity {
                 person.setTitle(title);
                 person.setDescription(description);
 
-                //Saving to Firebase
-                fire.child("Person").setValue(person);
+                //Pushing to Firebase
+                Firebase newRef = fire.child("Person").push();
+                newRef.setValue(person);
+
             }
         });
+
     }
 }
