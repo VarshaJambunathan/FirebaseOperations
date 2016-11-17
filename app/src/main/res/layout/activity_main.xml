@@ -12,14 +12,14 @@
 
     <EditText
         android:layout_width="wrap_content"
-        android:layout_height="250dp"
         android:inputType="textMultiLine"
         android:ems="10"
         android:id="@+id/description"
         android:layout_alignParentEnd="true"
         android:hint="Description"
         android:layout_below="@+id/title"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_height="100dp" />
 
     <EditText
         android:layout_width="wrap_content"
