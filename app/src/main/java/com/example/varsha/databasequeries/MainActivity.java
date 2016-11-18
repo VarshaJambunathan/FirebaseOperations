@@ -2,11 +2,21 @@ package com.example.varsha.databasequeries;
 
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -16,14 +26,27 @@ import android.widget.Toast;
 import com.firebase.client.*;
 import com.firebase.client.core.Context;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
-    TextView person;
-    EditText mTitle , mDescription;
+    TextView person, mDescription;
+    EditText mTitle;
     Button mSave;
+    public static final String TAG = "Varsha";
     public static final String FIREBASE_URL = "https://databasequeries-30365.firebaseio.com/";
-
+    static GoogleApiClient googleApiClient;
+    LocationRequest locationRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,13 +58,16 @@ public class MainActivity extends AppCompatActivity {
 
         person = (TextView) findViewById(R.id.persons);
         mTitle = (EditText) findViewById(R.id.title);
-        mDescription = (EditText) findViewById(R.id.description);
+        mDescription = (TextView) findViewById(R.id.description);
         mSave = (Button) findViewById(R.id.savebutton);
 
         //Listener for button
         mSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //Location Enabled
+                connectToApi();
+
                 //Creating a Firebase object
                 Firebase list = new Firebase(FIREBASE_URL);
 
@@ -61,6 +87,127 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+    }
 
+    public void connectToApi() {
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
+            googleApiClient = new GoogleApiClient.Builder(this)
+                    .addApi(LocationServices.API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+
+            if (!googleApiClient.isConnected() || !googleApiClient.isConnecting()) {
+                googleApiClient.connect();
+                Log.d("TAG", "connect");
+            }
+        } else {
+            Log.e("TAG", "unable to connect to google play services.");
+        }
+    }
+
+    public void checkGps() {
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        builder.setAlwaysShow(true);
+
+        PendingResult<LocationSettingsResult> result =
+                LocationServices.SettingsApi.checkLocationSettings(googleApiClient, builder.build());
+        result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
+            @Override
+            public void onResult(LocationSettingsResult result) {
+                final Status status = result.getStatus();
+//                final LocationSettingsStates state = result.getLocationSettingsStates();
+                switch (status.getStatusCode()) {
+                    case LocationSettingsStatusCodes.SUCCESS:
+                        // All location settings are satisfied. The client can initialize location
+                        // requests here.
+                        Toast.makeText(MainActivity.this, "Getting Current Location...", Toast.LENGTH_LONG)
+                                .show();
+                        break;
+                    case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                        // Location settings are not satisfied. But could be fixed by showing the user
+                        // a dialog.
+                        try {
+                            // Show the dialog by calling startResolutionForResult(),
+                            // and check the result in onActivityResult().
+                            status.startResolutionForResult(MainActivity.this, 1000);
+
+                        } catch (IntentSender.SendIntentException e) {
+                            // Ignore the error.
+                        }
+                        break;
+                    case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                        // Location settings are not satisfied. However, we have no way to fix the
+                        // settings so we won't show the dialog.
+                        break;
+                }
+            }
+        });
+    }
+
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+        locationRequest = LocationRequest.create();
+        locationRequest.setInterval(1000); // milliseconds
+        locationRequest.setFastestInterval(1000); // the fastest rate in milliseconds at which your app can handle location updates
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        checkGps();
+        getLocation();
+    }
+
+    private void getLocation() {
+        // shows an error but works if this permission check is not added.
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+
+        // here you get the location with location service/gps is on
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                googleApiClient, locationRequest, new com.google.android.gms.location.LocationListener() {
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        double lat = location.getLatitude();
+                        double lon = location.getLongitude();
+
+                        mDescription.setText("Latitude:" + lat + "\nLongitude:" + lon);
+                    }
+                });
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1000) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(MainActivity.this, "Getting current location . . . .", Toast.LENGTH_SHORT)
+                        .show();
+
+                //Getting the location of the victim
+            }
+
+        } else {
+            Toast.makeText(this, "Sorry you did not turn on the gps.", Toast.LENGTH_LONG).show();
+        }
     }
 }
