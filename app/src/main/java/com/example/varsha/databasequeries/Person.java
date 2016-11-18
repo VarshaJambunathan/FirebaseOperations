@@ -5,26 +5,33 @@ package com.example.varsha.databasequeries;
  */
 
 public class Person {
-    String title;
-    String description;
+    String name;
+    double latitude,longitude;
 
     public Person() {
       /*Blank default constructor essential for Firebase*/
     }
     //Getters and setters
-    public String getTitle(){
-        return  title;
+    public String getName(){
+        return  name;
     }
 
-    public void setTitle(String title){
-        this.title = title;
+    public void setName(String name){
+        this.name= name;
     }
 
-    public String getDescription(){
-        return description;
+    public double getLatitude(){
+        return latitude;
+    }
+    public double getLongitude(){
+        return longitude;
     }
 
-    public void setDescription(String description){
-        this.description = description;
+    public void setLongitude(double longitude){
+        this.longitude=longitude;
     }
+    public void setLatitude(double latitude){
+        this.latitude = latitude;
+    }
+
 }

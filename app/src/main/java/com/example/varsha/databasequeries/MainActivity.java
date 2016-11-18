@@ -3,7 +3,9 @@ package com.example.varsha.databasequeries;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.location.Address;
 import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -37,6 +39,9 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import java.util.List;
+import java.util.Locale;
+
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
 
@@ -47,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public static final String FIREBASE_URL = "https://databasequeries-30365.firebaseio.com/";
     static GoogleApiClient googleApiClient;
     LocationRequest locationRequest;
+    double lat,lon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +62,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         //Setting the context
         Firebase.setAndroidContext(this);
 
-        person = (TextView) findViewById(R.id.persons);
         mTitle = (EditText) findViewById(R.id.title);
         mDescription = (TextView) findViewById(R.id.description);
         mSave = (Button) findViewById(R.id.savebutton);
@@ -67,23 +72,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             public void onClick(View v) {
                 //Location Enabled
                 connectToApi();
-
-                //Creating a Firebase object
-                Firebase list = new Firebase(FIREBASE_URL);
-
-                //Getting values to store
-                String title = mTitle.getText().toString();
-                String description = mDescription.getText().toString();
-
-                Person person = new Person();
-
-                //Adding values
-                person.setTitle(title);
-                person.setDescription(description);
-
-                //Pushing to Firebase
-                Firebase appendList = list.child("Person").push();
-                appendList.setValue(person);
 
             }
         });
@@ -104,6 +92,25 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         } else {
             Log.e("TAG", "unable to connect to google play services.");
         }
+    }
+
+    public void fillFirebase(){
+        //Creating a Firebase object
+        Firebase list = new Firebase(FIREBASE_URL);
+
+        //Getting values to store
+        String name = mTitle.getText().toString();
+
+        Person person = new Person();
+
+        //Adding values
+        person.setName(name);
+        person.setLatitude(lat);
+        person.setLongitude(lon);
+
+        //Pushing to Firebase
+        Firebase appendList = list.child("Person").push();
+        appendList.setValue(person);
     }
 
     public void checkGps() {
@@ -157,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         checkGps();
         getLocation();
+        fillFirebase();
     }
 
     private void getLocation() {
@@ -177,12 +185,41 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 googleApiClient, locationRequest, new com.google.android.gms.location.LocationListener() {
                     @Override
                     public void onLocationChanged(Location location) {
-                        double lat = location.getLatitude();
-                        double lon = location.getLongitude();
+                        lat = location.getLatitude();
+                        lon = location.getLongitude();
 
                         mDescription.setText("Latitude:" + lat + "\nLongitude:" + lon);
+                       // fillFirebase();
+
                     }
                 });
+
+    }
+
+    //Complete address
+    private String getCompleteAddressString(double LATITUDE, double LONGITUDE) {
+        String strAdd = "";
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(LATITUDE, LONGITUDE, 1);
+            if (addresses != null) {
+                Address returnedAddress = addresses.get(0);
+                StringBuilder strReturnedAddress = new StringBuilder("");
+
+                for (int i = 0; i < returnedAddress.getMaxAddressLineIndex(); i++) {
+                    strReturnedAddress.append(returnedAddress.getAddressLine(i)).append("\n");
+                }
+                strAdd = strReturnedAddress.toString();
+                Toast.makeText(this,"My Current loction address" + strReturnedAddress.toString(),Toast.LENGTH_SHORT);
+            } else {
+                Toast.makeText(this, "My Current loction address No Address returned!", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this,             "My Current loction address Cannot get Address!"
+                    , Toast.LENGTH_SHORT).show();
+        }
+        return strAdd;
     }
 
     @Override
